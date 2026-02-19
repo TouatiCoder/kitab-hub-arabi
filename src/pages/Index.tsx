@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { BookCard } from "@/components/BookCard";
 import { Navbar } from "@/components/Navbar";
 import { AdBanner } from "@/components/AdBanner";
+import { Footer } from "@/components/Footer";
 import { MobileNav } from "@/components/MobileNav";
 import { mockBooks } from "@/data/mockData";
 
@@ -159,6 +160,7 @@ export default function Home() {
         </div>
       </section>
 
+      <Footer />
       <MobileNav />
     </div>
   );
