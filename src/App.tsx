@@ -14,6 +14,7 @@ import AdminReports from "./pages/AdminReports";
 import UserLogin from "./pages/UserLogin";
 import Books from "./pages/Books";
 import SearchPage from "./pages/SearchPage";
+import Library from "./pages/Library";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/books" element={<Books />} />
           <Route path="/search" element={<SearchPage />} />
+          <Route path="/library" element={<Library />} />
           <Route path="/book/:id" element={<BookDetails />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/login" element={<AdminLogin />} />
