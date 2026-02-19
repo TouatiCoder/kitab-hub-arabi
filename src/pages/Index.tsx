@@ -2,6 +2,7 @@ import { ArrowLeft, Flame, Star, ChevronLeft, ChevronRight } from "lucide-react"
 import { Link } from "react-router-dom";
 import { BookCard } from "@/components/BookCard";
 import { Navbar } from "@/components/Navbar";
+import { AdBanner } from "@/components/AdBanner";
 import { MobileNav } from "@/components/MobileNav";
 import { mockBooks } from "@/data/mockData";
 
@@ -86,6 +87,11 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Ad Banner */}
+      <div className="max-w-7xl mx-auto px-4 py-4">
+        <AdBanner slot="home-top" format="horizontal" />
+      </div>
+
       {/* Recommended Section */}
       <section className="max-w-7xl mx-auto px-4 py-6">
         <div className="flex items-center justify-between mb-5">
@@ -104,6 +110,11 @@ export default function Home() {
           ))}
         </div>
       </section>
+
+      {/* Ad Banner */}
+      <div className="max-w-7xl mx-auto px-4 py-4">
+        <AdBanner slot="home-mid" format="horizontal" />
+      </div>
 
       {/* Most Popular Section */}
       <section className="max-w-7xl mx-auto px-4 py-6 pb-24 md:pb-10">

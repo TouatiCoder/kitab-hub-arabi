@@ -4,6 +4,7 @@ import { Star, Eye, BookOpen, ShoppingCart, ArrowRight, ChevronLeft, ChevronRigh
 import { Navbar } from "@/components/Navbar";
 import { MobileNav } from "@/components/MobileNav";
 import { BookCard } from "@/components/BookCard";
+import { AdBanner } from "@/components/AdBanner";
 import { mockBooks, categoryColors } from "@/data/mockData";
 
 export default function BookDetails() {
@@ -110,6 +111,11 @@ export default function BookDetails() {
         </div>
       </div>
 
+      {/* Ad Banner */}
+      <div className="max-w-5xl mx-auto px-4 pb-4">
+        <AdBanner slot="book-top" format="horizontal" />
+      </div>
+
       {/* PDF Viewer */}
       <div className="max-w-5xl mx-auto px-4 pb-8">
         <div className={`rounded-2xl border border-border shadow-sm overflow-hidden transition-colors duration-300 ${darkReader ? "bg-gray-900" : "bg-card"}`}>
@@ -205,6 +211,11 @@ export default function BookDetails() {
             </button>
           </div>
         </div>
+      </div>
+
+      {/* Ad Banner */}
+      <div className="max-w-5xl mx-auto px-4 pb-4">
+        <AdBanner slot="book-bottom" format="rectangle" />
       </div>
 
       {/* Related Books */}
