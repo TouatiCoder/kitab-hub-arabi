@@ -155,7 +155,7 @@ export default function UserLogin() {
           {/* Register */}
           <p className="text-center text-sm text-muted-foreground">
             ليس لديك حساب؟{" "}
-            <Link to="#" className="text-primary font-bold hover:underline">
+            <Link to="/register" className="text-primary font-bold hover:underline">
               سجّل الآن مجاناً
             </Link>
           </p>
