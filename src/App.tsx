@@ -8,6 +8,8 @@ import BookDetails from "./pages/BookDetails";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminLogin from "./pages/AdminLogin";
 import AdminBooks from "./pages/AdminBooks";
+import AdminUsers from "./pages/AdminUsers";
+import AdminReports from "./pages/AdminReports";
 import UserLogin from "./pages/UserLogin";
 import NotFound from "./pages/NotFound";
 
@@ -25,6 +27,8 @@ const App = () => (
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin/books" element={<AdminBooks />} />
+          <Route path="/admin/users" element={<AdminUsers />} />
+          <Route path="/admin/reports" element={<AdminReports />} />
           <Route path="/login" element={<UserLogin />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
