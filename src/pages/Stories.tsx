@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, Fragment } from "react";
 import { Navbar } from "@/components/Navbar";
 import { MobileNav } from "@/components/MobileNav";
 import { Footer } from "@/components/Footer";
 import { ContentCard } from "@/components/ContentCard";
+import { AdBanner } from "@/components/AdBanner";
 import { mockContent, storyCategories } from "@/data/mockData";
 
 const storiesData = mockContent.filter(c => c.type === "قصة");
@@ -16,6 +17,8 @@ export default function Stories() {
     const matchSearch = !search || a.title.includes(search) || a.author.includes(search);
     return matchCat && matchSearch;
   });
+
+  const adInterval = Math.max(2, Math.floor(filtered.length / 4));
 
   return (
     <div className="min-h-screen bg-background" dir="rtl">
@@ -40,8 +43,15 @@ export default function Stories() {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 pb-20 md:pb-6">
           {filtered.length === 0 ? (
             <div className="col-span-full text-center py-16 text-muted-foreground">لا توجد قصص تطابق البحث</div>
-          ) : filtered.map(item => (
-            <ContentCard key={item.id} item={item} />
+          ) : filtered.map((item, i) => (
+            <Fragment key={item.id}>
+              <ContentCard item={item} />
+              {(i + 1) % adInterval === 0 && (i + 1) < filtered.length && Math.floor((i + 1) / adInterval) <= 3 && (
+                <div className="col-span-full py-2">
+                  <AdBanner slot={`stories-${Math.floor((i + 1) / adInterval)}`} format="horizontal" />
+                </div>
+              )}
+            </Fragment>
           ))}
         </div>
       </div>

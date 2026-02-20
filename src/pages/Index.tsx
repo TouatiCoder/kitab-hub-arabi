@@ -113,7 +113,7 @@ export default function Home() {
         <ScrollRow items={editorPicks} />
       </section>
 
-      {/* إعلان */}
+      {/* إعلان 1 */}
       <div className="max-w-7xl mx-auto px-4 py-4">
         <AdBanner slot="home-top" format="horizontal" />
       </div>
@@ -128,6 +128,11 @@ export default function Home() {
         </section>
       )}
 
+      {/* إعلان 2 */}
+      <div className="max-w-7xl mx-auto px-4 py-4">
+        <AdBanner slot="home-mid" format="horizontal" />
+      </div>
+
       {/* القصة الأكثر شعبية */}
       {stories.length > 0 && (
         <section className="max-w-7xl mx-auto px-4 py-6">
@@ -137,6 +142,11 @@ export default function Home() {
           </div>
         </section>
       )}
+
+      {/* إعلان 3 */}
+      <div className="max-w-7xl mx-auto px-4 py-4">
+        <AdBanner slot="home-bottom" format="horizontal" />
+      </div>
 
       {/* الرواية الأكثر شعبية */}
       {novels.length > 0 && (
