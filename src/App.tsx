@@ -13,6 +13,7 @@ import AdminLogin from "./pages/AdminLogin";
 import AdminContent from "./pages/AdminContent";
 import AdminWriters from "./pages/AdminWriters";
 import AdminReports from "./pages/AdminReports";
+import AdminSubscriptions from "./pages/AdminSubscriptions";
 import UserLogin from "./pages/UserLogin";
 import WriterDashboard from "./pages/WriterDashboard";
 import WriterJoinRequest from "./pages/WriterJoinRequest";
@@ -37,6 +38,7 @@ const App = () => (
           <Route path="/admin/content" element={<AdminContent />} />
           <Route path="/admin/writers" element={<AdminWriters />} />
           <Route path="/admin/reports" element={<AdminReports />} />
+          <Route path="/admin/subscriptions" element={<AdminSubscriptions />} />
           <Route path="/login" element={<UserLogin />} />
           <Route path="/writer" element={<WriterDashboard />} />
           <Route path="/writer/join" element={<WriterJoinRequest />} />

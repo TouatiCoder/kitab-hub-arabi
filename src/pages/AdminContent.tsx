@@ -12,6 +12,7 @@ const adminNavItems = [
   { label: "إدارة أعمال الكتاب", icon: FileText, path: "/admin/content" },
   { label: "التبليغات والمخالفات", icon: AlertTriangle, path: "/admin/reports" },
   { label: "كتاب المنصة", icon: Users, path: "/admin/writers" },
+  { label: "الاشتراكات", icon: BarChart3, path: "/admin/subscriptions" },
   { label: "الإعلانات", icon: Megaphone, path: "/admin/ads" },
   { label: "التقارير", icon: BarChart3, path: "/admin/analytics" },
   { label: "الإعدادات", icon: Settings, path: "/admin/settings" },
