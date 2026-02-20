@@ -4,17 +4,18 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
-import BookDetails from "./pages/BookDetails";
+import ContentDetails from "./pages/ContentDetails";
+import Articles from "./pages/Articles";
+import Stories from "./pages/Stories";
+import Novels from "./pages/Novels";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminLogin from "./pages/AdminLogin";
-import AdminBooks from "./pages/AdminBooks";
-import Register from "./pages/Register";
-import AdminUsers from "./pages/AdminUsers";
+import AdminContent from "./pages/AdminContent";
+import AdminWriters from "./pages/AdminWriters";
 import AdminReports from "./pages/AdminReports";
 import UserLogin from "./pages/UserLogin";
-import Books from "./pages/Books";
-import SearchPage from "./pages/SearchPage";
-import Library from "./pages/Library";
+import WriterDashboard from "./pages/WriterDashboard";
+import WriterJoinRequest from "./pages/WriterJoinRequest";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,17 +28,18 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
-          <Route path="/books" element={<Books />} />
-          <Route path="/search" element={<SearchPage />} />
-          <Route path="/library" element={<Library />} />
-          <Route path="/book/:id" element={<BookDetails />} />
+          <Route path="/articles" element={<Articles />} />
+          <Route path="/stories" element={<Stories />} />
+          <Route path="/novels" element={<Novels />} />
+          <Route path="/content/:id" element={<ContentDetails />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/login" element={<AdminLogin />} />
-          <Route path="/admin/books" element={<AdminBooks />} />
-          <Route path="/admin/users" element={<AdminUsers />} />
+          <Route path="/admin/content" element={<AdminContent />} />
+          <Route path="/admin/writers" element={<AdminWriters />} />
           <Route path="/admin/reports" element={<AdminReports />} />
           <Route path="/login" element={<UserLogin />} />
-          <Route path="/register" element={<Register />} />
+          <Route path="/writer" element={<WriterDashboard />} />
+          <Route path="/writer/join" element={<WriterJoinRequest />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
