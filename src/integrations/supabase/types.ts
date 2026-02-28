@@ -14,16 +14,313 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      chapters: {
+        Row: {
+          body: string
+          chapter_number: number
+          content_id: string
+          created_at: string
+          id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          body?: string
+          chapter_number: number
+          content_id: string
+          created_at?: string
+          id?: string
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          chapter_number?: number
+          content_id?: string
+          created_at?: string
+          id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chapters_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "contents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contents: {
+        Row: {
+          body: string | null
+          category: string | null
+          cover_url: string | null
+          created_at: string
+          deleted_at: string | null
+          id: string
+          is_complete: boolean | null
+          is_premium: boolean
+          pdf_url: string | null
+          rejection_reason: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["content_status"]
+          summary: string | null
+          tags: string[] | null
+          title: string
+          type: Database["public"]["Enums"]["content_type"]
+          updated_at: string
+          views: number
+          writer_id: string
+        }
+        Insert: {
+          body?: string | null
+          category?: string | null
+          cover_url?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          is_complete?: boolean | null
+          is_premium?: boolean
+          pdf_url?: string | null
+          rejection_reason?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["content_status"]
+          summary?: string | null
+          tags?: string[] | null
+          title: string
+          type: Database["public"]["Enums"]["content_type"]
+          updated_at?: string
+          views?: number
+          writer_id: string
+        }
+        Update: {
+          body?: string | null
+          category?: string | null
+          cover_url?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          is_complete?: boolean | null
+          is_premium?: boolean
+          pdf_url?: string | null
+          rejection_reason?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["content_status"]
+          summary?: string | null
+          tags?: string[] | null
+          title?: string
+          type?: Database["public"]["Enums"]["content_type"]
+          updated_at?: string
+          views?: number
+          writer_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string
+          email: string | null
+          full_name: string | null
+          gender: string | null
+          id: string
+          is_active: boolean
+          nationality: string | null
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          gender?: string | null
+          id: string
+          is_active?: boolean
+          nationality?: string | null
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          gender?: string | null
+          id?: string
+          is_active?: boolean
+          nationality?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      reports: {
+        Row: {
+          content_id: string
+          created_at: string
+          id: string
+          reason: string
+          reporter_id: string
+          reporter_note: string | null
+          resolved_by: string | null
+          status: Database["public"]["Enums"]["report_status"]
+          updated_at: string
+        }
+        Insert: {
+          content_id: string
+          created_at?: string
+          id?: string
+          reason: string
+          reporter_id: string
+          reporter_note?: string | null
+          resolved_by?: string | null
+          status?: Database["public"]["Enums"]["report_status"]
+          updated_at?: string
+        }
+        Update: {
+          content_id?: string
+          created_at?: string
+          id?: string
+          reason?: string
+          reporter_id?: string
+          reporter_note?: string | null
+          resolved_by?: string | null
+          status?: Database["public"]["Enums"]["report_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reports_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "contents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscriptions: {
+        Row: {
+          amount: number
+          created_at: string
+          expires_at: string
+          id: string
+          plan: string
+          starts_at: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          expires_at: string
+          id?: string
+          plan?: string
+          starts_at?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          expires_at?: string
+          id?: string
+          plan?: string
+          starts_at?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      writer_requests: {
+        Row: {
+          bio: string
+          created_at: string
+          email: string
+          full_name: string
+          gender: string | null
+          id: string
+          nationality: string | null
+          rejection_reason: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["request_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bio: string
+          created_at?: string
+          email: string
+          full_name: string
+          gender?: string | null
+          id?: string
+          nationality?: string | null
+          rejection_reason?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["request_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bio?: string
+          created_at?: string
+          email?: string
+          full_name?: string
+          gender?: string | null
+          id?: string
+          nationality?: string | null
+          rejection_reason?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["request_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_active_subscription: { Args: { _user_id: string }; Returns: boolean }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      increment_views: { Args: { p_content_id: string }; Returns: undefined }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "writer" | "user"
+      content_status: "مسودة" | "قيد المراجعة" | "منشور" | "مرفوض"
+      content_type: "مقال" | "قصة" | "رواية"
+      report_status: "جديد" | "قيد المراجعة" | "تمت معالجته"
+      request_status: "pending" | "approved" | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +447,12 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "writer", "user"],
+      content_status: ["مسودة", "قيد المراجعة", "منشور", "مرفوض"],
+      content_type: ["مقال", "قصة", "رواية"],
+      report_status: ["جديد", "قيد المراجعة", "تمت معالجته"],
+      request_status: ["pending", "approved", "rejected"],
+    },
   },
 } as const

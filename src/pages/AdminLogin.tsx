@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { BookOpen, Eye, EyeOff, AlertCircle } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function AdminLogin() {
   const [email, setEmail] = useState("");
@@ -8,14 +9,25 @@ export default function AdminLogin() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const { signIn, user, isAdmin } = useAuth();
+  const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Redirect if already logged in as admin
+  if (user && isAdmin) {
+    navigate("/admin/dashboard", { replace: true });
+    return null;
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     if (!email || !password) { setError("يرجى إدخال البريد الإلكتروني وكلمة المرور."); return; }
     if (password.length < 6) { setError("كلمة المرور يجب أن تكون ٦ أحرف على الأقل."); return; }
     setLoading(true);
-    setTimeout(() => { setLoading(false); window.location.href = "/admin/dashboard"; }, 1500);
+    const { error: err } = await signIn(email, password);
+    if (err) { setError(err); setLoading(false); return; }
+    // Auth state change will update roles, then ProtectedRoute handles access
+    navigate("/admin/dashboard");
   };
 
   return (

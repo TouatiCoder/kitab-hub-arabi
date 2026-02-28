@@ -1,17 +1,21 @@
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   BookOpen, Users, FileText, LogOut, BarChart3, Settings,
   LayoutDashboard, ChevronLeft, AlertTriangle, Megaphone,
-  Search, Check, X, Trash2, ShieldOff, ShieldCheck,
+  Search, Check, X, Trash2, ShieldOff, ShieldCheck, CreditCard,
 } from "lucide-react";
-import { mockWriters, joinRequests } from "@/data/mockData";
+import { useWriters, useWriterRequests } from "@/hooks/useAdmin";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 
 const adminNavItems = [
   { label: "الصفحة الرئيسية", icon: LayoutDashboard, path: "/admin/dashboard" },
   { label: "إدارة أعمال الكتاب", icon: FileText, path: "/admin/content" },
   { label: "التبليغات والمخالفات", icon: AlertTriangle, path: "/admin/reports" },
   { label: "كتاب المنصة", icon: Users, path: "/admin/writers" },
+  { label: "الاشتراكات", icon: CreditCard, path: "/admin/subscriptions" },
   { label: "الإعلانات", icon: Megaphone, path: "/admin/ads" },
   { label: "التقارير", icon: BarChart3, path: "/admin/analytics" },
   { label: "الإعدادات", icon: Settings, path: "/admin/settings" },
@@ -22,8 +26,35 @@ export default function AdminWriters() {
   const [tab, setTab] = useState<"requests" | "writers">("writers");
   const [search, setSearch] = useState("");
   const location = useLocation();
+  const navigate = useNavigate();
+  const { signOut } = useAuth();
+  const queryClient = useQueryClient();
 
-  const filteredWriters = mockWriters.filter(w => !search || w.name.includes(search) || w.email.includes(search));
+  const { data: writers = [], isLoading: writersLoading } = useWriters();
+  const { data: requests = [], isLoading: requestsLoading } = useWriterRequests();
+
+  const filteredWriters = writers.filter((w: any) => !search || w.full_name?.includes(search) || w.email?.includes(search));
+
+  const handleApproveRequest = async (req: any) => {
+    // Add writer role
+    await supabase.from("user_roles").insert({ user_id: req.user_id, role: "writer" as any });
+    // Update request status
+    await supabase.from("writer_requests").update({ status: "approved" as any }).eq("id", req.id);
+    queryClient.invalidateQueries({ queryKey: ["writer-requests"] });
+    queryClient.invalidateQueries({ queryKey: ["writers"] });
+  };
+
+  const handleRejectRequest = async (req: any) => {
+    await supabase.from("writer_requests").update({ status: "rejected" as any }).eq("id", req.id);
+    queryClient.invalidateQueries({ queryKey: ["writer-requests"] });
+  };
+
+  const handleToggleActive = async (writer: any) => {
+    await supabase.from("profiles").update({ is_active: !writer.is_active }).eq("id", writer.id);
+    queryClient.invalidateQueries({ queryKey: ["writers"] });
+  };
+
+  const handleSignOut = async () => { await signOut(); navigate("/admin/login"); };
 
   return (
     <div className="min-h-screen bg-background flex" dir="rtl">
@@ -48,36 +79,37 @@ export default function AdminWriters() {
       <div className={`flex-1 flex flex-col min-h-screen transition-all ${sidebarOpen ? "mr-64" : "mr-16"}`}>
         <header className="h-16 bg-card border-b border-border flex items-center justify-between px-6 sticky top-0 z-30">
           <p className="text-sm font-bold text-foreground">كتاب المنصة</p>
-          <Link to="/admin/login" className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm text-muted-foreground hover:bg-accent"><LogOut className="w-4 h-4" /> خروج</Link>
+          <button onClick={handleSignOut} className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm text-muted-foreground hover:bg-accent"><LogOut className="w-4 h-4" /> خروج</button>
         </header>
 
         <main className="flex-1 p-6 space-y-6">
-          {/* Tabs */}
           <div className="flex gap-2">
             <button onClick={() => setTab("writers")} className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${tab === "writers" ? "bg-primary text-primary-foreground" : "bg-card border border-border text-muted-foreground hover:bg-accent"}`}>
               إدارة الحسابات
             </button>
             <button onClick={() => setTab("requests")} className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${tab === "requests" ? "bg-primary text-primary-foreground" : "bg-card border border-border text-muted-foreground hover:bg-accent"}`}>
               طلبات الانضمام
-              {joinRequests.length > 0 && <span className="w-5 h-5 rounded-full bg-destructive text-destructive-foreground text-xs font-bold flex items-center justify-center">{joinRequests.length}</span>}
+              {requests.filter((r: any) => r.status === "pending").length > 0 && <span className="w-5 h-5 rounded-full bg-destructive text-destructive-foreground text-xs font-bold flex items-center justify-center">{requests.filter((r: any) => r.status === "pending").length}</span>}
             </button>
           </div>
 
           {tab === "requests" && (
             <div className="space-y-4">
-              <p className="text-xs text-muted-foreground">يتم حذف الطلبات تلقائياً بعد ٩٠ يوماً</p>
-              {joinRequests.map(req => (
+              {requestsLoading ? (
+                <p className="text-muted-foreground text-center py-8">جارٍ التحميل...</p>
+              ) : requests.filter((r: any) => r.status === "pending").length === 0 ? (
+                <p className="text-muted-foreground text-center py-8">لا توجد طلبات انضمام جديدة</p>
+              ) : requests.filter((r: any) => r.status === "pending").map((req: any) => (
                 <div key={req.id} className="bg-card border border-border rounded-2xl p-5 shadow-sm">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <h3 className="font-bold text-foreground">{req.name}</h3>
+                      <h3 className="font-bold text-foreground">{req.full_name}</h3>
                       <p className="text-xs text-muted-foreground mt-1">{req.gender} • {req.nationality} • {req.email}</p>
                       <p className="text-sm text-muted-foreground mt-2">{req.bio}</p>
-                      <p className="text-xs text-muted-foreground mt-1">{req.date}</p>
                     </div>
                     <div className="flex gap-2 flex-shrink-0">
-                      <button className="p-2.5 rounded-xl bg-green-100 text-green-600 hover:bg-green-200"><Check className="w-4 h-4" /></button>
-                      <button className="p-2.5 rounded-xl bg-red-100 text-red-500 hover:bg-red-200"><X className="w-4 h-4" /></button>
+                      <button onClick={() => handleApproveRequest(req)} className="p-2.5 rounded-xl bg-green-100 text-green-600 hover:bg-green-200"><Check className="w-4 h-4" /></button>
+                      <button onClick={() => handleRejectRequest(req)} className="p-2.5 rounded-xl bg-red-100 text-red-500 hover:bg-red-200"><X className="w-4 h-4" /></button>
                     </div>
                   </div>
                 </div>
@@ -110,24 +142,27 @@ export default function AdminWriters() {
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredWriters.map((w, idx) => (
+                      {writersLoading ? (
+                        <tr><td colSpan={9} className="text-center py-8 text-muted-foreground">جارٍ التحميل...</td></tr>
+                      ) : filteredWriters.length === 0 ? (
+                        <tr><td colSpan={9} className="text-center py-8 text-muted-foreground">لا يوجد كتّاب</td></tr>
+                      ) : filteredWriters.map((w: any, idx: number) => (
                         <tr key={w.id} className={`border-b border-border last:border-0 hover:bg-accent/40 ${idx % 2 !== 0 ? "bg-muted/10" : ""}`}>
-                          <td className="px-5 py-3.5 font-semibold text-foreground">{w.name}</td>
-                          <td className="px-4 py-3.5 hidden sm:table-cell text-muted-foreground">{w.nationality}</td>
+                          <td className="px-5 py-3.5 font-semibold text-foreground">{w.full_name || "—"}</td>
+                          <td className="px-4 py-3.5 hidden sm:table-cell text-muted-foreground">{w.nationality || "—"}</td>
                           <td className="px-4 py-3.5 hidden md:table-cell text-muted-foreground text-xs">{w.email}</td>
                           <td className="px-4 py-3.5 hidden lg:table-cell text-foreground">{w.articles}</td>
                           <td className="px-4 py-3.5 hidden lg:table-cell text-foreground">{w.stories}</td>
                           <td className="px-4 py-3.5 hidden lg:table-cell text-foreground">{w.novels}</td>
                           <td className="px-4 py-3.5 hidden md:table-cell font-bold text-foreground">{w.total}</td>
                           <td className="px-4 py-3.5">
-                            <span className={`text-xs font-bold px-2.5 py-1 rounded-lg ${w.status === "نشط" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"}`}>{w.status}</span>
+                            <span className={`text-xs font-bold px-2.5 py-1 rounded-lg ${w.is_active ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"}`}>{w.is_active ? "نشط" : "موقوف"}</span>
                           </td>
                           <td className="px-4 py-3.5">
                             <div className="flex items-center justify-center gap-1">
-                              <button className="p-2 rounded-lg hover:bg-accent text-muted-foreground" title={w.status === "نشط" ? "إيقاف" : "تفعيل"}>
-                                {w.status === "نشط" ? <ShieldOff className="w-4 h-4" /> : <ShieldCheck className="w-4 h-4" />}
+                              <button onClick={() => handleToggleActive(w)} className="p-2 rounded-lg hover:bg-accent text-muted-foreground" title={w.is_active ? "إيقاف" : "تفعيل"}>
+                                {w.is_active ? <ShieldOff className="w-4 h-4" /> : <ShieldCheck className="w-4 h-4" />}
                               </button>
-                              <button className="p-2 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive"><Trash2 className="w-4 h-4" /></button>
                             </div>
                           </td>
                         </tr>
