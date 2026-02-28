@@ -249,6 +249,7 @@ export type Database = {
           created_at: string
           expires_at: string
           id: string
+          paypal_subscription_id: string | null
           plan: string
           starts_at: string
           status: string
@@ -259,6 +260,7 @@ export type Database = {
           created_at?: string
           expires_at: string
           id?: string
+          paypal_subscription_id?: string | null
           plan?: string
           starts_at?: string
           status?: string
@@ -269,6 +271,7 @@ export type Database = {
           created_at?: string
           expires_at?: string
           id?: string
+          paypal_subscription_id?: string | null
           plan?: string
           starts_at?: string
           status?: string
@@ -351,6 +354,10 @@ export type Database = {
         Args: { p_admin_id: string; p_request_id: string }
         Returns: undefined
       }
+      cancel_paypal_subscription: {
+        Args: { p_new_status?: string; p_paypal_subscription_id: string }
+        Returns: undefined
+      }
       has_active_subscription: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
         Args: {
@@ -360,6 +367,16 @@ export type Database = {
         Returns: boolean
       }
       increment_views: { Args: { p_content_id: string }; Returns: undefined }
+      upsert_paypal_subscription: {
+        Args: {
+          p_amount?: number
+          p_paypal_subscription_id: string
+          p_plan?: string
+          p_status?: string
+          p_user_id: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "writer" | "user"
