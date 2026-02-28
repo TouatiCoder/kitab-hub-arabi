@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  BookOpen, Bell, FileText, Plus, Eye, Clock, Check, X, AlertCircle,
+  BookOpen, Bell, FileText, Plus, Eye, Clock, Check, X, AlertCircle, Upload, FileUp, Trash2,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWriterContents } from "@/hooks/useContents";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 const typeColors: Record<string, string> = {
   "مقال": "bg-amber-100 text-amber-700",
@@ -14,11 +15,16 @@ const typeColors: Record<string, string> = {
   "رواية": "bg-rose-100 text-rose-700",
 };
 
+const UPLOAD_ENDPOINT = "https://your-host.com/upload.php"; // عدّل هذا الرابط
+
 export default function WriterDashboard() {
   const [tab, setTab] = useState<"works" | "new">("works");
   const [legalChecked, setLegalChecked] = useState(false);
   const [form, setForm] = useState({ title: "", type: "", category: "", tags: "", summary: "", content: "" });
   const [loading, setLoading] = useState(false);
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [uploadingPdf, setUploadingPdf] = useState(false);
   const { user, profile, signOut } = useAuth();
   const { data: works = [], isLoading } = useWriterContents(user?.id);
   const queryClient = useQueryClient();
@@ -27,6 +33,42 @@ export default function WriterDashboard() {
     setForm(prev => ({ ...prev, [key]: e.target.value }));
 
   const wordCount = form.summary.trim().split(/\s+/).filter(Boolean).length;
+
+  const handlePdfUpload = async (file: File) => {
+    if (file.type !== "application/pdf") {
+      toast.error("يرجى اختيار ملف PDF فقط");
+      return;
+    }
+    if (file.size > 20 * 1024 * 1024) {
+      toast.error("حجم الملف يتجاوز 20MB");
+      return;
+    }
+    setPdfFile(file);
+    setUploadingPdf(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch(UPLOAD_ENDPOINT, { method: "POST", body: formData });
+      const data = await res.json();
+      if (data.url) {
+        setPdfUrl(data.url);
+        toast.success("تم رفع الملف بنجاح");
+      } else {
+        throw new Error("لم يتم الحصول على رابط الملف");
+      }
+    } catch {
+      toast.error("فشل رفع الملف، حاول مجدداً");
+      setPdfFile(null);
+      setPdfUrl(null);
+    } finally {
+      setUploadingPdf(false);
+    }
+  };
+
+  const removePdf = () => {
+    setPdfFile(null);
+    setPdfUrl(null);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,16 +82,22 @@ export default function WriterDashboard() {
       category: form.category,
       tags: form.tags.split(",").map(t => t.trim()).filter(Boolean),
       summary: form.summary,
-      body: form.content,
+      body: form.content || null,
+      pdf_url: pdfUrl || null,
       status: "قيد المراجعة" as any,
     });
 
     setLoading(false);
     if (!error) {
       setForm({ title: "", type: "", category: "", tags: "", summary: "", content: "" });
+      setPdfFile(null);
+      setPdfUrl(null);
       setLegalChecked(false);
       setTab("works");
       queryClient.invalidateQueries({ queryKey: ["contents"] });
+      toast.success("تم إرسال العمل للمراجعة");
+    } else {
+      toast.error("حدث خطأ أثناء الإرسال");
     }
   };
 
@@ -155,6 +203,50 @@ export default function WriterDashboard() {
                 <input type="text" placeholder="فصّل الوسوم بفاصلة" value={form.tags} onChange={set("tags")}
                   className="w-full bg-muted border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 placeholder:text-muted-foreground" />
               </div>
+              {/* PDF Upload Section */}
+              <div>
+                <label className="block text-sm font-semibold text-foreground mb-1.5">رفع ملف PDF (اختياري)</label>
+                {!pdfFile ? (
+                  <label className="flex flex-col items-center justify-center gap-2 w-full bg-muted border-2 border-dashed border-border rounded-xl px-4 py-6 cursor-pointer hover:border-primary/50 hover:bg-accent/30 transition-all">
+                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                      <Upload className="w-6 h-6 text-primary" />
+                    </div>
+                    <div className="text-center">
+                      <span className="text-sm font-semibold text-foreground">اضغط لرفع ملف PDF</span>
+                      <p className="text-xs text-muted-foreground mt-0.5">الحد الأقصى 20MB</p>
+                    </div>
+                    <input
+                      type="file"
+                      accept=".pdf,application/pdf"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handlePdfUpload(file);
+                      }}
+                    />
+                  </label>
+                ) : (
+                  <div className="flex items-center gap-3 bg-muted border border-border rounded-xl px-4 py-3">
+                    <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center flex-shrink-0">
+                      <FileUp className="w-5 h-5 text-red-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-foreground truncate">{pdfFile.name}</p>
+                      <p className="text-xs text-muted-foreground">{(pdfFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                    </div>
+                    {uploadingPdf ? (
+                      <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                    ) : pdfUrl ? (
+                      <span className="text-xs font-bold text-green-600 bg-green-100 px-2.5 py-1 rounded-lg flex items-center gap-1">
+                        <Check className="w-3 h-3" /> تم الرفع
+                      </span>
+                    ) : null}
+                    <button type="button" onClick={removePdf} className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
               <div>
                 <label className="block text-sm font-semibold text-foreground mb-1.5">النبذة ({wordCount}/222 كلمة)</label>
                 <textarea placeholder="اكتب نبذة عن العمل..." value={form.summary} onChange={set("summary")} rows={3}
@@ -162,7 +254,7 @@ export default function WriterDashboard() {
                 {wordCount > 222 && <p className="text-xs text-destructive mt-1">النبذة تجاوزت الحد الأقصى (222 كلمة)</p>}
               </div>
               <div>
-                <label className="block text-sm font-semibold text-foreground mb-1.5">نص العمل</label>
+                <label className="block text-sm font-semibold text-foreground mb-1.5">نص العمل {pdfUrl && <span className="text-xs text-muted-foreground font-normal">(اختياري - تم رفع PDF)</span>}</label>
                 <textarea placeholder="اكتب محتوى العمل هنا..." value={form.content} onChange={set("content")} rows={8}
                   className="w-full bg-muted border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 placeholder:text-muted-foreground resize-none" />
               </div>
