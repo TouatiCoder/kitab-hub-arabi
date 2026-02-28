@@ -1,35 +1,61 @@
 import { Eye, BookOpen, Lock } from "lucide-react";
 import { Link } from "react-router-dom";
-import { ContentItem, categoryColors, typeColors } from "@/data/mockData";
+
+export interface ContentCardItem {
+  id: string;
+  title: string;
+  author: string;
+  authorId?: string;
+  cover: string;
+  views: string;
+  type: "مقال" | "قصة" | "رواية";
+  category: string;
+  tags: string[];
+  description: string;
+  chapters?: number;
+  isComplete?: boolean;
+  isExclusive?: boolean;
+  status?: string;
+  createdAt?: string;
+}
+
+const categoryColors: Record<string, string> = {
+  "فكري": "bg-amber-100 text-amber-700",
+  "رأي": "bg-orange-100 text-orange-700",
+  "أدبي": "bg-emerald-100 text-emerald-700",
+  "إثارة": "bg-red-100 text-red-700",
+  "اجتماعي": "bg-cyan-100 text-cyan-700",
+  "رومانسي": "bg-pink-100 text-pink-700",
+  "خيال": "bg-violet-100 text-violet-700",
+  "درامي": "bg-rose-100 text-rose-700",
+  "غموض": "bg-slate-100 text-slate-700",
+  "مغامرة": "bg-indigo-100 text-indigo-700",
+};
+
+const typeColors: Record<string, string> = {
+  "مقال": "bg-amber-100 text-amber-700",
+  "قصة": "bg-sky-100 text-sky-700",
+  "رواية": "bg-rose-100 text-rose-700",
+};
 
 interface ContentCardProps {
-  item: ContentItem;
+  item: ContentCardItem;
 }
 
 export function ContentCard({ item }: ContentCardProps) {
   return (
     <Link to={`/content/${item.id}`} className="group flex flex-col bg-card rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 border border-border/50">
-      {/* Cover */}
       <div className="relative overflow-hidden aspect-[3/4] bg-muted">
-        <img
-          src={item.cover}
-          alt={item.title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-        />
-        {/* Type badge */}
+        <img src={item.cover} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
         <div className={`absolute top-2 right-2 text-xs font-bold px-2.5 py-1 rounded-full shadow ${typeColors[item.type] || "bg-muted text-muted-foreground"}`}>
           {item.type}
         </div>
-        {/* Exclusive badge */}
         {item.isExclusive && (
           <div className="absolute top-2 left-2 bg-amber-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow flex items-center gap-1">
-            <Lock className="w-3 h-3" />
-            حصري
+            <Lock className="w-3 h-3" />حصري
           </div>
         )}
       </div>
-
-      {/* Content */}
       <div className="p-3 flex flex-col gap-1.5 flex-1">
         <div className="flex flex-wrap gap-1">
           {item.tags.slice(0, 3).map(tag => (

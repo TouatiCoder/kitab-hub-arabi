@@ -4,21 +4,28 @@ import { MobileNav } from "@/components/MobileNav";
 import { Footer } from "@/components/Footer";
 import { ContentCard } from "@/components/ContentCard";
 import { AdBanner } from "@/components/AdBanner";
-import { mockContent, articleCategories, categoryColors } from "@/data/mockData";
+import { SkeletonCard } from "@/components/SkeletonCard";
+import { usePublishedContents } from "@/hooks/useContents";
 
-const articles = mockContent.filter(c => c.type === "مقال");
 const types = ["الكل", "فكري/رأي", "قصصي", "أدبي"];
 
 export default function Articles() {
   const [typeFilter, setTypeFilter] = useState("الكل");
-  const [catFilter, setCatFilter] = useState("الكل");
   const [search, setSearch] = useState("");
+  const { data: contents, isLoading } = usePublishedContents("مقال");
 
-  const filtered = articles.filter(a => {
-    const matchType = typeFilter === "الكل" || a.category.includes(typeFilter.replace("/رأي", ""));
-    const matchCat = catFilter === "الكل" || a.category === catFilter;
+  const items = (contents || []).map(c => ({
+    id: c.id, title: c.title, author: c.writer_name || "كاتب", authorId: c.writer_id,
+    cover: c.cover_url || "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=300&h=400&fit=crop",
+    views: String(c.views), type: c.type as any, category: c.category || "", tags: c.tags || [],
+    description: c.summary || "", status: c.status as any, createdAt: c.created_at,
+    isExclusive: c.is_premium,
+  }));
+
+  const filtered = items.filter(a => {
+    const matchType = typeFilter === "الكل" || (a.category && a.category.includes(typeFilter.replace("/رأي", "")));
     const matchSearch = !search || a.title.includes(search) || a.author.includes(search);
-    return matchType && matchCat && matchSearch;
+    return matchType && matchSearch;
   });
 
   const adInterval = Math.max(2, Math.floor(filtered.length / 4));
@@ -44,7 +51,9 @@ export default function Articles() {
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 pb-20 md:pb-6">
-          {filtered.length === 0 ? (
+          {isLoading ? (
+            [1,2,3,4].map(i => <SkeletonCard key={i} />)
+          ) : filtered.length === 0 ? (
             <div className="col-span-full text-center py-16 text-muted-foreground">لا توجد مقالات تطابق البحث</div>
           ) : filtered.map((item, i) => (
             <Fragment key={item.id}>

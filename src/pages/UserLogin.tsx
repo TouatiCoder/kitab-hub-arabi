@@ -1,21 +1,45 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { BookOpen, Eye, EyeOff, AlertCircle } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function UserLogin() {
+  const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
+  const { signIn, signUp, user } = useAuth();
+  const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Redirect if already logged in
+  if (user) {
+    navigate("/", { replace: true });
+    return null;
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setSuccess("");
     if (!email || !password) { setError("يرجى إدخال البريد الإلكتروني وكلمة المرور."); return; }
+    if (mode === "signup" && !fullName) { setError("يرجى إدخال الاسم الكامل."); return; }
+    if (password.length < 6) { setError("كلمة المرور يجب أن تكون ٦ أحرف على الأقل."); return; }
+
     setLoading(true);
-    setTimeout(() => { setLoading(false); window.location.href = "/"; }, 1500);
+    if (mode === "login") {
+      const { error: err } = await signIn(email, password);
+      if (err) { setError(err); setLoading(false); return; }
+      navigate("/");
+    } else {
+      const { error: err } = await signUp(email, password, fullName);
+      if (err) { setError(err); setLoading(false); return; }
+      setSuccess("تم إنشاء الحساب! يرجى تأكيد بريدك الإلكتروني.");
+      setLoading(false);
+    }
   };
 
   return (
@@ -42,26 +66,39 @@ export default function UserLogin() {
             <span className="font-extrabold text-xl text-primary">الهامش</span>
           </div>
 
-          <h1 className="text-3xl font-extrabold text-foreground mb-1">تسجيل الدخول</h1>
-          <p className="text-muted-foreground mb-6">أدخل بياناتك للوصول إلى حسابك</p>
+          <h1 className="text-3xl font-extrabold text-foreground mb-1">
+            {mode === "login" ? "تسجيل الدخول" : "إنشاء حساب جديد"}
+          </h1>
+          <p className="text-muted-foreground mb-6">
+            {mode === "login" ? "أدخل بياناتك للوصول إلى حسابك" : "أنشئ حسابك للبدء في القراءة"}
+          </p>
 
           {error && (
             <div className="flex items-center gap-2 bg-destructive/10 border border-destructive/30 text-destructive rounded-xl px-4 py-3 mb-5 text-sm">
               <AlertCircle className="w-4 h-4 flex-shrink-0" /><span>{error}</span>
             </div>
           )}
+          {success && (
+            <div className="flex items-center gap-2 bg-green-100 border border-green-300 text-green-700 rounded-xl px-4 py-3 mb-5 text-sm">
+              <span>{success}</span>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {mode === "signup" && (
+              <div>
+                <label className="block text-sm font-semibold text-foreground mb-1.5">الاسم الكامل</label>
+                <input type="text" placeholder="محمد أحمد" value={fullName} onChange={e => setFullName(e.target.value)}
+                  className="w-full bg-muted border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 placeholder:text-muted-foreground" />
+              </div>
+            )}
             <div>
               <label className="block text-sm font-semibold text-foreground mb-1.5">البريد الإلكتروني</label>
               <input type="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)}
                 className="w-full bg-muted border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all placeholder:text-muted-foreground" />
             </div>
             <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-sm font-semibold text-foreground">كلمة المرور</label>
-                <Link to="#" className="text-xs text-primary hover:underline font-medium">نسيت كلمة المرور؟</Link>
-              </div>
+              <label className="text-sm font-semibold text-foreground mb-1.5 block">كلمة المرور</label>
               <div className="relative">
                 <input type={showPassword ? "text" : "password"} placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)}
                   className="w-full bg-muted border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all placeholder:text-muted-foreground pl-10" />
@@ -71,28 +108,20 @@ export default function UserLogin() {
                 </button>
               </div>
             </div>
-            <div className="flex items-center gap-2.5">
-              <button type="button" onClick={() => setRememberMe(!rememberMe)}
-                className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${rememberMe ? "bg-primary border-primary" : "border-border bg-background"}`}>
-                {rememberMe && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
-              </button>
-              <label className="text-sm text-foreground cursor-pointer" onClick={() => setRememberMe(!rememberMe)}>تذكّرني</label>
-            </div>
             <button type="submit" disabled={loading}
               className="w-full gradient-primary text-primary-foreground font-bold py-3.5 rounded-2xl hover:opacity-90 transition-all shadow-primary-glow mt-2 disabled:opacity-70 flex items-center justify-center gap-2">
-              {loading ? <><div className="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin" />جارٍ تسجيل الدخول...</> : "تسجيل الدخول"}
+              {loading ? <><div className="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin" />{mode === "login" ? "جارٍ تسجيل الدخول..." : "جارٍ الإنشاء..."}</> : mode === "login" ? "تسجيل الدخول" : "إنشاء حساب"}
             </button>
           </form>
 
-          {/* Facebook login */}
-          <div className="flex items-center gap-3 my-5">
-            <div className="flex-1 h-px bg-border" /><span className="text-xs text-muted-foreground">أو</span><div className="flex-1 h-px bg-border" />
-          </div>
-          <button className="w-full flex items-center justify-center gap-2 bg-[#1877F2] text-white font-semibold py-3 rounded-2xl hover:bg-[#166FE5] transition-colors text-sm">
-            تسجيل الدخول بفيسبوك
-          </button>
-
-          <p className="text-center text-xs text-muted-foreground mt-6">
+          <p className="text-center text-sm text-muted-foreground mt-6">
+            {mode === "login" ? (
+              <>ليس لديك حساب؟ <button onClick={() => { setMode("signup"); setError(""); setSuccess(""); }} className="text-primary font-bold hover:underline">إنشاء حساب</button></>
+            ) : (
+              <>لديك حساب؟ <button onClick={() => { setMode("login"); setError(""); setSuccess(""); }} className="text-primary font-bold hover:underline">تسجيل الدخول</button></>
+            )}
+          </p>
+          <p className="text-center text-xs text-muted-foreground mt-3">
             هل أنت كاتب؟{" "}
             <Link to="/writer/join" className="text-primary font-bold hover:underline">تقدّم بطلب انضمام</Link>
           </p>

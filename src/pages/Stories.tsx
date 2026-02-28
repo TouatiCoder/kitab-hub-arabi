@@ -4,15 +4,25 @@ import { MobileNav } from "@/components/MobileNav";
 import { Footer } from "@/components/Footer";
 import { ContentCard } from "@/components/ContentCard";
 import { AdBanner } from "@/components/AdBanner";
-import { mockContent, storyCategories } from "@/data/mockData";
+import { SkeletonCard } from "@/components/SkeletonCard";
+import { usePublishedContents } from "@/hooks/useContents";
 
-const storiesData = mockContent.filter(c => c.type === "قصة");
+const storyCategories = ["اجتماعي", "خيال", "رومانسي", "واقعي", "كوميدي"];
 
 export default function Stories() {
   const [catFilter, setCatFilter] = useState("الكل");
   const [search, setSearch] = useState("");
+  const { data: contents, isLoading } = usePublishedContents("قصة");
 
-  const filtered = storiesData.filter(a => {
+  const items = (contents || []).map(c => ({
+    id: c.id, title: c.title, author: c.writer_name || "كاتب", authorId: c.writer_id,
+    cover: c.cover_url || "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=300&h=400&fit=crop",
+    views: String(c.views), type: c.type as any, category: c.category || "", tags: c.tags || [],
+    description: c.summary || "", status: c.status as any, createdAt: c.created_at,
+    isExclusive: c.is_premium,
+  }));
+
+  const filtered = items.filter(a => {
     const matchCat = catFilter === "الكل" || a.category === catFilter;
     const matchSearch = !search || a.title.includes(search) || a.author.includes(search);
     return matchCat && matchSearch;
@@ -31,7 +41,7 @@ export default function Stories() {
           <input type="text" placeholder="ابحث عن قصة أو كاتب..." value={search} onChange={e => setSearch(e.target.value)}
             className="flex-1 bg-card border border-border rounded-xl px-4 py-2.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40" />
           <div className="flex gap-2 flex-wrap">
-            {["الكل", ...storyCategories.slice(0, 5)].map(t => (
+            {["الكل", ...storyCategories].map(t => (
               <button key={t} onClick={() => setCatFilter(t)}
                 className={`px-3 py-2 rounded-xl text-xs font-semibold transition-all ${catFilter === t ? "bg-primary text-primary-foreground" : "bg-card border border-border text-muted-foreground hover:bg-accent"}`}>
                 {t}
@@ -41,7 +51,9 @@ export default function Stories() {
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 pb-20 md:pb-6">
-          {filtered.length === 0 ? (
+          {isLoading ? (
+            [1,2,3,4].map(i => <SkeletonCard key={i} />)
+          ) : filtered.length === 0 ? (
             <div className="col-span-full text-center py-16 text-muted-foreground">لا توجد قصص تطابق البحث</div>
           ) : filtered.map((item, i) => (
             <Fragment key={item.id}>

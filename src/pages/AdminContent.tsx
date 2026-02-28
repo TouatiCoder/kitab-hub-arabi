@@ -1,11 +1,14 @@
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   BookOpen, Users, FileText, LogOut, BarChart3, Settings,
   LayoutDashboard, ChevronLeft, Search, Eye, AlertTriangle, Megaphone,
   Check, X, Plus, Upload, PenLine, Trash2, CreditCard,
 } from "lucide-react";
-import { mockContent, typeColors } from "@/data/mockData";
+import { useAllContents } from "@/hooks/useContents";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 
 const adminNavItems = [
   { label: "الصفحة الرئيسية", icon: LayoutDashboard, path: "/admin/dashboard" },
@@ -17,6 +20,12 @@ const adminNavItems = [
   { label: "التقارير", icon: BarChart3, path: "/admin/analytics" },
   { label: "الإعدادات", icon: Settings, path: "/admin/settings" },
 ];
+
+const typeColors: Record<string, string> = {
+  "مقال": "bg-amber-100 text-amber-700",
+  "قصة": "bg-sky-100 text-sky-700",
+  "رواية": "bg-rose-100 text-rose-700",
+};
 
 type PublishMode = "pdf" | "chapters" | null;
 
@@ -34,10 +43,13 @@ export default function AdminContent() {
   const [showPublish, setShowPublish] = useState(false);
   const [publishMode, setPublishMode] = useState<PublishMode>(null);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { signOut, user } = useAuth();
+  const queryClient = useQueryClient();
 
-  // Publish form state
+  const { data: contents = [], isLoading } = useAllContents();
+
   const [form, setForm] = useState({ title: "", type: "", category: "", tags: "", summary: "" });
-  const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [chapters, setChapters] = useState<Chapter[]>([{ id: "1", title: "", content: "" }]);
   const [activeChapter, setActiveChapter] = useState(0);
 
@@ -60,15 +72,59 @@ export default function AdminContent() {
   };
 
   const resetPublish = () => {
-    setShowPublish(false);
-    setPublishMode(null);
+    setShowPublish(false); setPublishMode(null);
     setForm({ title: "", type: "", category: "", tags: "", summary: "" });
-    setPdfFile(null);
-    setChapters([{ id: "1", title: "", content: "" }]);
-    setActiveChapter(0);
+    setChapters([{ id: "1", title: "", content: "" }]); setActiveChapter(0);
   };
 
-  const filtered = mockContent.filter(c => !search || c.title.includes(search) || c.author.includes(search));
+  const handlePublish = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.title || !form.type || !user) return;
+
+    const { data: content, error } = await supabase.from("contents").insert({
+      writer_id: user.id,
+      title: form.title,
+      type: form.type as any,
+      category: form.category,
+      tags: form.tags.split(",").map(t => t.trim()).filter(Boolean),
+      summary: form.summary,
+      body: publishMode === "chapters" ? null : "",
+      status: "منشور" as any,
+    }).select().single();
+
+    if (error || !content) return;
+
+    // Insert chapters if chapter mode
+    if (publishMode === "chapters" && chapters.length > 0) {
+      await supabase.from("chapters").insert(
+        chapters.map((ch, i) => ({
+          content_id: content.id,
+          chapter_number: i + 1,
+          title: ch.title,
+          body: ch.content,
+        }))
+      );
+    }
+
+    queryClient.invalidateQueries({ queryKey: ["contents"] });
+    resetPublish();
+  };
+
+  const handleApprove = async (id: string) => {
+    await supabase.from("contents").update({ status: "منشور" as any }).eq("id", id);
+    queryClient.invalidateQueries({ queryKey: ["contents"] });
+  };
+
+  const handleReject = async () => {
+    if (!rejectId) return;
+    await supabase.from("contents").update({ status: "مرفوض" as any, rejection_reason: rejectReason }).eq("id", rejectId);
+    queryClient.invalidateQueries({ queryKey: ["contents"] });
+    setRejectId(null); setRejectReason("");
+  };
+
+  const handleSignOut = async () => { await signOut(); navigate("/admin/login"); };
+
+  const filtered = contents.filter((c: any) => !search || c.title?.includes(search) || c.writer_name?.includes(search));
 
   return (
     <div className="min-h-screen bg-background flex" dir="rtl">
@@ -92,13 +148,8 @@ export default function AdminContent() {
 
       <div className={`flex-1 flex flex-col min-h-screen transition-all ${sidebarOpen ? "mr-64" : "mr-16"}`}>
         <header className="h-16 bg-card border-b border-border flex items-center justify-between px-6 sticky top-0 z-30">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center"><span className="text-primary font-bold text-sm">م</span></div>
-            <div><p className="text-sm font-bold text-foreground">مدير المنصة</p></div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Link to="/admin/login" className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm text-muted-foreground hover:bg-accent"><LogOut className="w-4 h-4" /> خروج</Link>
-          </div>
+          <p className="text-sm font-bold text-foreground">إدارة أعمال الكتاب</p>
+          <button onClick={handleSignOut} className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm text-muted-foreground hover:bg-accent"><LogOut className="w-4 h-4" /> خروج</button>
         </header>
 
         <main className="flex-1 p-6 space-y-6">
@@ -126,28 +177,26 @@ export default function AdminContent() {
                   <tr className="border-b border-border bg-muted/40">
                     <th className="text-right px-5 py-3.5 font-semibold text-muted-foreground">اسم الكاتب</th>
                     <th className="text-right px-4 py-3.5 font-semibold text-muted-foreground">عنوان العمل</th>
-                    <th className="text-right px-4 py-3.5 font-semibold text-muted-foreground hidden sm:table-cell">النوع/التصنيف</th>
-                    <th className="text-right px-4 py-3.5 font-semibold text-muted-foreground hidden md:table-cell">حالة العمل</th>
+                    <th className="text-right px-4 py-3.5 font-semibold text-muted-foreground hidden sm:table-cell">النوع</th>
+                    <th className="text-right px-4 py-3.5 font-semibold text-muted-foreground hidden md:table-cell">الحالة</th>
                     <th className="text-right px-4 py-3.5 font-semibold text-muted-foreground hidden lg:table-cell">المشاهدات</th>
                     <th className="text-center px-4 py-3.5 font-semibold text-muted-foreground">إجراءات</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((item, idx) => (
+                  {isLoading ? (
+                    <tr><td colSpan={6} className="text-center py-8 text-muted-foreground">جارٍ التحميل...</td></tr>
+                  ) : filtered.length === 0 ? (
+                    <tr><td colSpan={6} className="text-center py-8 text-muted-foreground">لا يوجد محتوى</td></tr>
+                  ) : filtered.map((item: any, idx: number) => (
                     <tr key={item.id} className={`border-b border-border last:border-0 hover:bg-accent/40 transition-colors ${idx % 2 !== 0 ? "bg-muted/10" : ""}`}>
-                      <td className="px-5 py-3.5 font-medium text-foreground">{item.author}</td>
-                      <td className="px-4 py-3.5">
-                        <div className="flex items-center gap-3">
-                          <img src={item.cover} alt="" className="w-8 h-12 object-cover rounded-lg flex-shrink-0" />
-                          <span className="font-semibold text-foreground line-clamp-1">{item.title}</span>
-                        </div>
-                      </td>
+                      <td className="px-5 py-3.5 font-medium text-foreground">{item.writer_name}</td>
+                      <td className="px-4 py-3.5 font-semibold text-foreground line-clamp-1">{item.title}</td>
                       <td className="px-4 py-3.5 hidden sm:table-cell">
-                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-lg ${typeColors[item.type]}`}>{item.type}</span>
-                        <span className="text-xs text-muted-foreground mr-1">/ {item.category}</span>
+                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-lg ${typeColors[item.type] || ""}`}>{item.type}</span>
                       </td>
                       <td className="px-4 py-3.5 hidden md:table-cell">
-                        <span className={`text-xs font-bold px-2.5 py-1 rounded-lg ${item.status === "منشور" ? "bg-green-100 text-green-700" : item.status === "قيد المراجعة" ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-600"}`}>{item.status}</span>
+                        <span className={`text-xs font-bold px-2.5 py-1 rounded-lg ${item.status === "منشور" ? "bg-green-100 text-green-700" : item.status === "قيد المراجعة" ? "bg-amber-100 text-amber-700" : item.status === "مرفوض" ? "bg-red-100 text-red-600" : "bg-muted text-muted-foreground"}`}>{item.status}</span>
                       </td>
                       <td className="px-4 py-3.5 hidden lg:table-cell text-muted-foreground">{item.views}</td>
                       <td className="px-4 py-3.5">
@@ -155,7 +204,7 @@ export default function AdminContent() {
                           <Link to={`/content/${item.id}`} className="p-2 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground"><Eye className="w-4 h-4" /></Link>
                           {item.status === "قيد المراجعة" && (
                             <>
-                              <button className="p-2 rounded-lg hover:bg-green-100 text-green-600" title="نشر"><Check className="w-4 h-4" /></button>
+                              <button onClick={() => handleApprove(item.id)} className="p-2 rounded-lg hover:bg-green-100 text-green-600" title="نشر"><Check className="w-4 h-4" /></button>
                               <button onClick={() => setRejectId(item.id)} className="p-2 rounded-lg hover:bg-red-100 text-red-500" title="رفض"><X className="w-4 h-4" /></button>
                             </>
                           )}
@@ -179,7 +228,7 @@ export default function AdminContent() {
               className="w-full bg-muted border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 mb-4 placeholder:text-muted-foreground" />
             <div className="flex gap-3">
               <button onClick={() => { setRejectId(null); setRejectReason(""); }} className="flex-1 px-4 py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-accent">إلغاء</button>
-              <button onClick={() => { setRejectId(null); setRejectReason(""); }} className="flex-1 px-4 py-2.5 rounded-xl bg-destructive text-destructive-foreground text-sm font-medium hover:opacity-90">رفض</button>
+              <button onClick={handleReject} className="flex-1 px-4 py-2.5 rounded-xl bg-destructive text-destructive-foreground text-sm font-medium hover:opacity-90">رفض</button>
             </div>
           </div>
         </div>
@@ -194,7 +243,6 @@ export default function AdminContent() {
               <button onClick={resetPublish} className="p-2 rounded-lg hover:bg-accent text-muted-foreground"><X className="w-5 h-5" /></button>
             </div>
 
-            {/* Mode selector */}
             {!publishMode && (
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground mb-4">اختر طريقة النشر:</p>
@@ -223,18 +271,11 @@ export default function AdminContent() {
               </div>
             )}
 
-            {/* Common fields */}
             {publishMode && (
-              <form className="space-y-4" onSubmit={e => { e.preventDefault(); resetPublish(); }}>
-                <button type="button" onClick={() => setPublishMode(null)}
-                  className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary mb-2">
+              <form className="space-y-4" onSubmit={handlePublish}>
+                <button type="button" onClick={() => setPublishMode(null)} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary mb-2">
                   <ChevronLeft className="w-4 h-4 rotate-180" /> رجوع
                 </button>
-
-                <div className="flex items-center gap-2 mb-3">
-                  {publishMode === "pdf" ? <Upload className="w-5 h-5 text-primary" /> : <PenLine className="w-5 h-5 text-primary" />}
-                  <span className="font-bold text-foreground">{publishMode === "pdf" ? "رفع ملف PDF" : "كتابة فصل بفصل"}</span>
-                </div>
 
                 <div>
                   <label className="block text-sm font-semibold text-foreground mb-1.5">العنوان</label>
@@ -272,86 +313,31 @@ export default function AdminContent() {
                     className="w-full bg-muted border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 placeholder:text-muted-foreground resize-none" />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-semibold text-foreground mb-1.5">صورة الغلاف</label>
-                  <div className="border-2 border-dashed border-border rounded-xl p-5 text-center text-muted-foreground text-sm hover:border-primary/50 transition-colors cursor-pointer">
-                    اضغط لتحميل الصورة أو اسحبها هنا
-                  </div>
-                </div>
-
-                {/* PDF upload mode */}
-                {publishMode === "pdf" && (
-                  <div>
-                    <label className="block text-sm font-semibold text-foreground mb-1.5">ملف الكتاب (PDF)</label>
-                    <label className="flex flex-col items-center gap-3 border-2 border-dashed border-border rounded-xl p-8 text-center hover:border-primary/50 transition-colors cursor-pointer bg-muted/30">
-                      <Upload className="w-10 h-10 text-primary/60" />
-                      {pdfFile ? (
-                        <div>
-                          <p className="text-sm font-semibold text-foreground">{pdfFile.name}</p>
-                          <p className="text-xs text-muted-foreground mt-1">{(pdfFile.size / 1024 / 1024).toFixed(2)} MB</p>
-                        </div>
-                      ) : (
-                        <div>
-                          <p className="text-sm font-medium text-foreground">اسحب ملف PDF هنا أو اضغط للاختيار</p>
-                          <p className="text-xs text-muted-foreground mt-1">الحد الأقصى: 50 MB</p>
-                        </div>
-                      )}
-                      <input type="file" accept=".pdf" className="hidden" onChange={e => setPdfFile(e.target.files?.[0] || null)} />
-                    </label>
-                  </div>
-                )}
-
-                {/* Chapter-by-chapter mode */}
+                {/* Chapters mode */}
                 {publishMode === "chapters" && (
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <label className="text-sm font-semibold text-foreground">الفصول ({chapters.length} فصل)</label>
-                      <button type="button" onClick={addChapter}
-                        className="flex items-center gap-1.5 text-xs font-semibold text-primary hover:text-primary/80 px-3 py-1.5 rounded-lg hover:bg-primary/5 transition-colors">
-                        <Plus className="w-3.5 h-3.5" /> إضافة فصل
-                      </button>
-                    </div>
-
-                    {/* Chapter tabs */}
-                    <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
+                  <div>
+                    <div className="flex items-center gap-2 mb-3 overflow-x-auto scrollbar-hide">
                       {chapters.map((ch, i) => (
                         <button key={ch.id} type="button" onClick={() => setActiveChapter(i)}
-                          className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex-shrink-0 ${activeChapter === i ? "bg-primary text-primary-foreground" : "bg-muted border border-border text-muted-foreground hover:bg-accent"}`}>
-                          الفصل {i + 1}
-                          {chapters.length > 1 && activeChapter === i && (
-                            <span onClick={e => { e.stopPropagation(); removeChapter(i); }}
-                              className="p-0.5 rounded hover:bg-destructive/20"><Trash2 className="w-3 h-3" /></span>
-                          )}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1 ${activeChapter === i ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-accent"}`}>
+                          فصل {i + 1}
+                          {chapters.length > 1 && <button type="button" onClick={e => { e.stopPropagation(); removeChapter(i); }} className="hover:text-destructive"><Trash2 className="w-3 h-3" /></button>}
                         </button>
                       ))}
+                      <button type="button" onClick={addChapter} className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-primary/10 text-primary hover:bg-primary/20">
+                        <Plus className="w-3 h-3" />
+                      </button>
                     </div>
-
-                    {/* Active chapter editor */}
-                    <div className="bg-muted/30 border border-border rounded-xl p-4 space-y-3">
-                      <input type="text" placeholder={`عنوان الفصل ${activeChapter + 1}`}
-                        value={chapters[activeChapter]?.title || ""}
-                        onChange={e => updateChapter(activeChapter, "title", e.target.value)}
-                        className="w-full bg-card border border-border rounded-xl px-4 py-2.5 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/40 placeholder:text-muted-foreground" />
-                      <textarea placeholder="اكتب محتوى الفصل هنا..."
-                        value={chapters[activeChapter]?.content || ""}
-                        onChange={e => updateChapter(activeChapter, "content", e.target.value)}
-                        rows={10}
-                        className="w-full bg-card border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 placeholder:text-muted-foreground resize-none leading-relaxed" />
-                      <p className="text-xs text-muted-foreground text-left">
-                        {chapters[activeChapter]?.content?.trim().split(/\s+/).filter(Boolean).length || 0} كلمة
-                      </p>
-                    </div>
+                    <input type="text" placeholder={`عنوان الفصل ${activeChapter + 1}`} value={chapters[activeChapter]?.title || ""} onChange={e => updateChapter(activeChapter, "title", e.target.value)}
+                      className="w-full bg-muted border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 placeholder:text-muted-foreground mb-3" />
+                    <textarea placeholder="محتوى الفصل..." value={chapters[activeChapter]?.content || ""} onChange={e => updateChapter(activeChapter, "content", e.target.value)} rows={8}
+                      className="w-full bg-muted border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 placeholder:text-muted-foreground resize-none" />
                   </div>
                 )}
 
-                <div className="flex gap-3 pt-2">
-                  <button type="button" onClick={resetPublish}
-                    className="flex-1 px-4 py-3 rounded-xl border border-border text-sm font-medium hover:bg-accent transition-colors">إلغاء</button>
-                  <button type="submit"
-                    className="flex-1 gradient-primary text-primary-foreground font-bold py-3 rounded-xl hover:opacity-90 shadow-primary-glow text-sm">
-                    نشر العمل
-                  </button>
-                </div>
+                <button type="submit" className="w-full gradient-primary text-primary-foreground font-bold py-3.5 rounded-2xl hover:opacity-90 shadow-primary-glow">
+                  نشر العمل
+                </button>
               </form>
             )}
           </div>
