@@ -347,6 +347,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      approve_writer_request: {
+        Args: { p_admin_id: string; p_request_id: string }
+        Returns: undefined
+      }
       has_active_subscription: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
         Args: {
