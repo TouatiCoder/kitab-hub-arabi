@@ -17,6 +17,7 @@ import AdminWriters from "./pages/AdminWriters";
 import AdminReports from "./pages/AdminReports";
 import AdminSubscriptions from "./pages/AdminSubscriptions";
 import AdminAds from "./pages/AdminAds";
+import AdminAnalytics from "./pages/AdminAnalytics";
 import UserLogin from "./pages/UserLogin";
 import WriterDashboard from "./pages/WriterDashboard";
 import WriterJoinRequest from "./pages/WriterJoinRequest";
@@ -44,6 +45,7 @@ const App = () => (
             <Route path="/admin/reports" element={<ProtectedRoute requireAdmin><AdminReports /></ProtectedRoute>} />
             <Route path="/admin/subscriptions" element={<ProtectedRoute requireAdmin><AdminSubscriptions /></ProtectedRoute>} />
             <Route path="/admin/ads" element={<ProtectedRoute requireAdmin><AdminAds /></ProtectedRoute>} />
+            <Route path="/admin/analytics" element={<ProtectedRoute requireAdmin><AdminAnalytics /></ProtectedRoute>} />
             <Route path="/login" element={<UserLogin />} />
             <Route path="/writer" element={<ProtectedRoute requireWriter><WriterDashboard /></ProtectedRoute>} />
             <Route path="/writer/join" element={<WriterJoinRequest />} />
