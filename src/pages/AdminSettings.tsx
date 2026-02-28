@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   BookOpen, Users, FileText, Bell, LogOut, BarChart3, Settings,
   LayoutDashboard, ChevronLeft, AlertTriangle, Megaphone, CreditCard,
-  Globe, Palette, Shield, Save,
+  Globe, Palette, Shield, Save, Wallet, Eye, EyeOff,
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
@@ -30,6 +31,35 @@ export default function AdminSettings() {
   const [autoApproveContent, setAutoApproveContent] = useState(false);
   const [allowSignups, setAllowSignups] = useState(true);
   const [maintenanceMode, setMaintenanceMode] = useState(false);
+
+  // PayPal settings
+  const [paypalClientId, setPaypalClientId] = useState("");
+  const [paypalPlanId, setPaypalPlanId] = useState("");
+  const [subscriptionPrice, setSubscriptionPrice] = useState("10.00");
+  const [subscriptionDuration, setSubscriptionDuration] = useState("30");
+  const [showClientId, setShowClientId] = useState(false);
+
+  // Stats
+  const [activeSubsCount, setActiveSubsCount] = useState(0);
+  const [totalRevenue, setTotalRevenue] = useState(0);
+
+  useEffect(() => {
+    // Fetch subscription stats
+    const fetchStats = async () => {
+      const { count } = await supabase
+        .from("subscriptions")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "نشط");
+      setActiveSubsCount(count || 0);
+
+      const { data } = await supabase
+        .from("subscriptions")
+        .select("amount");
+      const total = (data || []).reduce((sum, s) => sum + Number(s.amount), 0);
+      setTotalRevenue(total);
+    };
+    fetchStats();
+  }, []);
 
   const handleSignOut = async () => {
     await signOut();
@@ -169,6 +199,95 @@ export default function AdminSettings() {
                   <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all ${maintenanceMode ? "right-0.5" : "right-[22px]"}`} />
                 </button>
               </label>
+            </div>
+          </div>
+
+          {/* PayPal & Subscription Settings */}
+          <div className="bg-card rounded-2xl border border-border p-6 space-y-5">
+            <h2 className="font-bold text-foreground flex items-center gap-2">
+              <Wallet className="w-4 h-4 text-primary" />إعدادات الدفع و الاشتراكات (PayPal)
+            </h2>
+
+            {/* Quick Stats */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="bg-muted rounded-xl p-4">
+                <p className="text-xs text-muted-foreground">الاشتراكات النشطة</p>
+                <p className="text-2xl font-extrabold text-primary">{activeSubsCount}</p>
+              </div>
+              <div className="bg-muted rounded-xl p-4">
+                <p className="text-xs text-muted-foreground">إجمالي الإيرادات</p>
+                <p className="text-2xl font-extrabold text-primary">${totalRevenue.toFixed(2)}</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-foreground mb-1.5">PayPal Client ID</label>
+                <div className="relative">
+                  <input
+                    type={showClientId ? "text" : "password"}
+                    value={paypalClientId}
+                    onChange={e => setPaypalClientId(e.target.value)}
+                    placeholder="Axxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                    className="w-full bg-muted border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 pe-10"
+                    dir="ltr"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowClientId(!showClientId)}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showClientId ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">من لوحة تحكم PayPal Developer</p>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-foreground mb-1.5">PayPal Plan ID</label>
+                <input
+                  type="text"
+                  value={paypalPlanId}
+                  onChange={e => setPaypalPlanId(e.target.value)}
+                  placeholder="P-xxxxxxxxxxxxxxxxxxxxxxxx"
+                  className="w-full bg-muted border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  dir="ltr"
+                />
+                <p className="text-xs text-muted-foreground mt-1">معرف خطة الاشتراك الشهري</p>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-foreground mb-1.5">سعر الاشتراك الشهري ($)</label>
+                <input
+                  type="number"
+                  value={subscriptionPrice}
+                  onChange={e => setSubscriptionPrice(e.target.value)}
+                  className="w-full bg-muted border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  dir="ltr"
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-foreground mb-1.5">مدة الاشتراك (بالأيام)</label>
+                <input
+                  type="number"
+                  value={subscriptionDuration}
+                  onChange={e => setSubscriptionDuration(e.target.value)}
+                  className="w-full bg-muted border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  dir="ltr"
+                  min="1"
+                />
+              </div>
+            </div>
+
+            <div className="bg-muted/50 rounded-xl p-4 border border-border/50">
+              <h3 className="text-sm font-semibold text-foreground mb-2">📋 خطوات الإعداد</h3>
+              <ol className="text-xs text-muted-foreground space-y-1.5 list-decimal list-inside" dir="rtl">
+                <li>أنشئ حساب PayPal Developer وأنشئ تطبيق (App)</li>
+                <li>أنشئ منتج (Product) ثم خطة اشتراك (Subscription Plan)</li>
+                <li>انسخ Client ID و Plan ID وضعهما أعلاه</li>
+                <li>أضف PayPal Client Secret و Webhook ID في إعدادات المشروع السرية</li>
+                <li>قم بإعداد Webhook URL في PayPal لتوجيهه إلى الدالة الخلفية</li>
+              </ol>
             </div>
           </div>
 
