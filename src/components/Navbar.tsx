@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Search, Menu, X, BookOpen, User, LogOut } from "lucide-react";
+import { Search, Menu, X, BookOpen, User, LogOut, PenTool, UserCircle } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -52,6 +52,8 @@ export function Navbar() {
                 <Link to="/writer" className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary/20">لوحة الكاتب</Link>
               )}
               <span className="text-xs text-muted-foreground">{profile?.full_name || user.email}</span>
+              <Link to="/profile" className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-accent text-foreground hover:bg-primary/10 ml-2 flex items-center gap-1"><UserCircle className="w-3 h-3" />البروفيل</Link>
+              <Link to="/request-writer" className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-accent text-foreground hover:bg-primary/10 ml-2 flex items-center gap-1"><PenTool className="w-3 h-3" />طلب كاتب</Link>
               <button onClick={signOut} className="p-2 rounded-lg hover:bg-accent transition-colors text-muted-foreground" title="تسجيل الخروج">
                 <LogOut className="w-4 h-4" />
               </button>

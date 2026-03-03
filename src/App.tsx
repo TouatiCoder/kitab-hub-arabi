@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
@@ -23,6 +23,7 @@ import UserLogin from "./pages/UserLogin";
 import WriterDashboard from "./pages/WriterDashboard";
 import WriterJoinRequest from "./pages/WriterJoinRequest";
 import NotFound from "./pages/NotFound";
+import UserSettings from "./pages/UserSettings";
 
 const queryClient = new QueryClient();
 
@@ -49,9 +50,11 @@ const App = () => (
             <Route path="/admin/ads" element={<ProtectedRoute requireAdmin><AdminAds /></ProtectedRoute>} />
             <Route path="/admin/analytics" element={<ProtectedRoute requireAdmin><AdminAnalytics /></ProtectedRoute>} />
             <Route path="/admin/settings" element={<ProtectedRoute requireAdmin><AdminSettings /></ProtectedRoute>} />
+            <Route path="/admin" element={<Navigate to="/admin/login" replace />} />
             <Route path="/login" element={<UserLogin />} />
             <Route path="/writer" element={<ProtectedRoute requireWriter><WriterDashboard /></ProtectedRoute>} />
             <Route path="/writer/join" element={<WriterJoinRequest />} />
+            <Route path="/settings" element={<ProtectedRoute><UserSettings /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
